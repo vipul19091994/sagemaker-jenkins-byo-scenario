@@ -1,5 +1,4 @@
 def IMAGE_NAME="byo-scikit"
-def IMAGE_TAG=${env.BUILD_ID}
 
 node {
 
@@ -10,7 +9,7 @@ node {
        }
 
        stage('BuildContainer') {
-           imageBuild(IMAGE_NAME, IMAGE_TAG)
+           imageBuild(IMAGE_NAME, ${env.BUILD_ID})
        }
 
    	   stage ('PublishContainerImage') {
