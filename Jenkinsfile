@@ -1,11 +1,9 @@
 node {
-    def mvnHome = tool 'M3'
 
     stage('Checkout') {
-        checkout scm
+       checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/seigenbrode/byo-scenario']]])
     }
 
     stage('Build') {
-        sh "${mvnHome}/bin/mvn -B package"
     }
 }
