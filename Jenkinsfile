@@ -11,9 +11,7 @@ pipeline {
       }
 
        stage ('BuildContainer') {
-    	 steps {
- 	        def customImage = docker.build("scikit-byo:${env.BUILD_ID}")
- 	     }
+   	        def customImage = docker.build("scikit-byo:${env.BUILD_ID}")
        }
 
    	   stage ('PublishContainerImage') {
