@@ -11,7 +11,7 @@ node {
     }
 
     stage('PublishContainerImage') {
-     	  script
+     	  steps
          	   {
            		 sh 'echo "ECR URI"'
            		 sh 'echo ${params.ECRURI}'
