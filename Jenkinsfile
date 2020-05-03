@@ -14,11 +14,7 @@ node {
      	  script
          	   {
            		 sh("eval \$(aws ecr get-login-password --region us-east-1 | sed 's|https://||')")
-          	     // Push the Docker image to ECR
-               	 docker.withRegistry(${params.ECRURI})
-                 {
-                  	customImage.push()
-               	 }
-               }
+           		 sh("eval \$(docker  push  ${params.ECRURI}:customImage")
+                }
          }
     }    
