@@ -19,8 +19,9 @@ pipeline {
 
         stage("PublishContainerImage") {
      	      steps { 
-           		sh("eval \$(aws ecr get-login-password --region us-east-1 | sed 's|https://||')")
-           		sh 'docker push "${params.ECRURI}":customImage'
+              sh """
+           		  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${params.ECRURI}
+           		"""
           }
         }
     }
