@@ -12,7 +12,7 @@ pipeline {
         stage("BuildContainer") {
             steps {
               sh """
- 	              docker build -t scikit-byo:${env.BUILD_ID}
+ 	              docker build -t scikit-byo:${env.BUILD_ID} .
               """
             }
         }
