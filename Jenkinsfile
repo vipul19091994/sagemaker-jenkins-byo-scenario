@@ -1,20 +1,24 @@
-node {
+Pipeline {
 
-    stage('Checkout') {
-       checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/seigenbrode/byo-scenario']]])
-    }
+    agent any
 
-    stage('BuildContainer') {
+    stages {
+        stage('Checkout') {
+          checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/seigenbrode/byo-scenario']]])
+        }
 
- 	   def customImage = docker.build("scikit-byo:${env.BUILD_ID}")
+        stage('BuildContainer') {
 
-    }
+ 	        def customImage = docker.build("scikit-byo:${env.BUILD_ID}")
 
-    stage('PublishContainerImage') {
-     	script { 
+        }
+
+        stage('PublishContainerImage') {
+     	    steps { 
              	sh "echo "${env.ECRURI}""
            		sh("eval \$(aws ecr get-login-password --region us-east-1 | sed 's|https://||')")
            		sh 'docker push "${params.ECRURI}":customImage'
+          }
         }
     }
 }   
