@@ -20,6 +20,7 @@ pipeline {
         stage("PublishContainerImage") {
      	      steps { 
               sh """
+                echo "${params.ECRURI}"
            		  aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${params.ECRURI}
            		"""
           }
