@@ -11,7 +11,7 @@ pipeline {
 
         stage("BuildContainer") {
             steps {
- 	            sh 'docker build -t scikit-byo:${env.BUILD_ID}
+ 	            sh "docker build -t scikit-byo:${env.BUILD_ID}""
             }
         }
 
