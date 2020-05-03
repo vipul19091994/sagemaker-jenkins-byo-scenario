@@ -21,7 +21,7 @@ pipeline {
      	      steps { 
               sh """
                 echo "${params.ECRURI}"
-                docker tag scikit-byo:${env.BUILD_ID} ${param.ECRURI}:${env.BUILD_ID}
+                docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:${env.BUILD_ID}
                 docker push scikit-byo:${env.BUILD_ID}
            		"""
           }
