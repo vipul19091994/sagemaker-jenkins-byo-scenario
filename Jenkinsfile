@@ -11,12 +11,10 @@ node {
     }
 
     stage('PublishContainerImage') {
-     	  steps
-         	   {
+     	script { 
            		 sh 'echo "ECR URI"'
-           		 sh 'echo ${params.ECRURI}'
+           		 sh 'echo ${ECRURI}'
            		 sh("eval \$(aws ecr get-login-password --region us-east-1 | sed 's|https://||')")
            		 sh 'docker  push  ${params.ECRURI}:customImage'
-                }
-         }
+        }
     }    
