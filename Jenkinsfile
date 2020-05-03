@@ -10,13 +10,14 @@ pipeline {
         }
 
         stage("BuildContainer") {
+            steps {
 
- 	        def customImage = docker.build("scikit-byo:${env.BUILD_ID}")
-
+ 	             def customImage = docker.build("scikit-byo:${env.BUILD_ID}")
+            }
         }
 
         stage("PublishContainerImage") {
-     	    steps { 
+     	      steps { 
              	sh "echo "${env.ECRURI}""
            		sh("eval \$(aws ecr get-login-password --region us-east-1 | sed 's|https://||')")
            		sh 'docker push "${params.ECRURI}":customImage'
