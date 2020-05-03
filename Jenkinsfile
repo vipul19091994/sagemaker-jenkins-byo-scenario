@@ -13,11 +13,11 @@ node {
     stage('PublishContainerImage') {
      	  script
          	   {
-           		 sh("eval \$(aws ecr get-login --region us-east-1 | sed 's|https://||')")
+           		 sh("eval \$(aws ecr get-login-password --region us-east-1 | sed 's|https://||')")
           	     // Push the Docker image to ECR
                	 docker.withRegistry(${params.ECRURI})
                  {
-                  	docker.image(customImage).push()
+                  	customImage.push()
                	 }
                }
          }
