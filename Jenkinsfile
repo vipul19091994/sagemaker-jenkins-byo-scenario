@@ -2,6 +2,11 @@ pipeline {
 
     agent any
 
+    environment {
+        AWS_ECR_LOGIN = 'true'
+        DOCKER_CONFIG= ${params.JENKINSHOME}/.docker
+    }
+
     stages {
         stage("Checkout") {
             steps {
@@ -22,7 +27,7 @@ pipeline {
               sh """
                 echo "${params.ECRURI}"
                 docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:scikit-byo/${env.BUILD_ID}
-                $(aws ecr get-login-password --region us-east-1)
+                aws ecr get-login-password --region us-east-1
                 docker push ${params.ECRURI}:${env.BUILD_ID}
            		"""
           }
