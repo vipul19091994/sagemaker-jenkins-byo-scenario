@@ -4,7 +4,7 @@ pipeline {
 
     environment {
         AWS_ECR_LOGIN = 'true'
-        DOCKER_CONFIG= ${params.JENKINSHOME}/.docker
+        DOCKER_CONFIG= "${params.JENKINSHOME}"
     }
 
     stages {
