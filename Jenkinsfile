@@ -28,9 +28,11 @@ pipeline {
 
         stage("TrainModel") {
             steps { 
+              withAWS(region:'us-east-1, credentials: "${params.AWSUser}"") { 
               sh """
                 echo "Train Model"
               """
+              }
           }
         }
     }
