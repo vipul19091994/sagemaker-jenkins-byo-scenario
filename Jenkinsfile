@@ -27,7 +27,7 @@ pipeline {
               sh """
                 echo "${params.ECRURI}"
                 docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:${env.BUILD_ID} 
-                aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin ${params.DOCKERLOGIN}
+                aws ecr get-login-password --region us-east-1 | docker login --username jenkins --password-stdin ${params.DOCKERLOGIN}
                 docker push ${params.ECRURI}:${env.BUILD_ID}
            		"""
           }
