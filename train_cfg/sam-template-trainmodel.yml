@@ -23,7 +23,7 @@ Resources:
           SageMakerExecutionRole: !GetAtt [SageMakerRole, Arn]
           SSEKMSKeyIdIn: !Ref SSEKMSKeyId
       FunctionName: "MLOps-Jenkins-TrainModel-ScikitBYO"
-       Code:
+      Code:
         S3Bucket: !Ref S3PackagedLambdaCode
         S3Key: "MLOps-Jenkins-TrainModel.py.zip"
       Runtime: "python3.6"
