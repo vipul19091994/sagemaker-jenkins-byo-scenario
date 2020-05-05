@@ -17,10 +17,10 @@ Resources:
     Type: "AWS::Lambda::Function"
     Properties: 
       Handler: "MLOps-Jenkins-TrainModel.lambda_handler"
-      Role: !GetAtt [LambdaExecutionRole, Arn]
+      Role: !Ref LambdaExecutionRoleTest
       Environment: 
         Variables:
-          SageMakerExecutionRole: !GetAtt [SageMakerRole, Arn]
+          SageMakerExecutionRole: !Ref SageMakerExecutionRoleTest
           SSEKMSKeyIdIn: !Ref SSEKMSKeyId
       FunctionName: "MLOps-Jenkins-TrainModel-ScikitBYO"
       Code:
