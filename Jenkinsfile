@@ -28,6 +28,7 @@ pipeline {
 
         stage("TrainModel") {
             steps { 
+              sh 'echo ${params.S3_PACKAGED_LAMBDA}'
               samDeploy([credentialsId: '${params.AWS_DEPLOYUSER}', kmsKeyId: '${params.KMSKEYID}', outputTemplateFile: '', parameters: [[key: 'S3PackagedLambdaCode', value: '${params.S3_PACKAGED_LAMBDA}'],[key: 'SageMakerExecutionRole', value: '${params.SAGEMAKER_EXECUTION_ROLE_TEST}']], region: 'us-east-1', roleArn: '${params.LAMBDA_EXECUTION_ROLE_TEST}', s3Bucket: '${params.S3_PACKAGED_LAMBDA}', stackName: 'cfn-deploy-trainmodel-lambda', templateFile: './train_cfg/sam-template-trainmodel.yml'])
           }
         }
