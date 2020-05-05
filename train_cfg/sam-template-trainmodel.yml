@@ -21,7 +21,7 @@ Resources:
       Environment: 
         Variables:
           SageMakerExecutionRole: !Ref SageMakerExecutionRoleTest
-          SSEKMSKeyIdIn: !Ref SSEKMSKeyId
+          SSEKMSKeyIdIn: !Ref SSEKMSKeyIdTest
       FunctionName: "MLOps-Jenkins-TrainModel-ScikitBYO"
       Code:
         S3Bucket: !Ref S3PackagedLambdaCode
