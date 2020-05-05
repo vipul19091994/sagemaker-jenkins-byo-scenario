@@ -14,9 +14,10 @@ pipeline {
             }
         }
 
-        stage("BuildContainer") {
+        stage("BuildPushContainer") {
             steps {
               sh """
+                echo "${params.ECRURI}"
  	              docker build -t scikit-byo:${env.BUILD_ID} .
               """
             }
@@ -26,8 +27,8 @@ pipeline {
      	      steps { 
               sh """
                 echo "${params.ECRURI}"
-                docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:${env.BUILD_ID} 
                 aws ecr get-login-password --region us-east-1 | docker login --username AWS   --password-stdin ${params.ECRURI}
+                docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:${env.BUILD_ID} 
                 docker push ${params.ECRURI}:${env.BUILD_ID}
            		"""
           }
