@@ -40,10 +40,8 @@ pipeline {
               script {
                   waitUntil {
                     def response = sh """ 
-                     training_job=$('${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}')
-                     echo training_job
-                     aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "$training_job"}' response.json
-                     status=$(cat ./response.json)
+                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json
+                    status=$(cat ./response.json)
                      echo $status
                     """
                     status == "Completed" || status == "Failed"
