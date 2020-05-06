@@ -41,7 +41,7 @@ pipeline {
               aws invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --payload '{ "TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"
               echo status
               """
-            status == "Completed" or status == "Failed"
+            status == "Completed" || status == "Failed"
         }
     }
 }   
