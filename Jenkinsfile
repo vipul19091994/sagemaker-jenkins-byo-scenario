@@ -40,17 +40,9 @@ pipeline {
               script {
                   waitUntil {
                     def response = sh """ 
-                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json
-                    cat response.json
+                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json | grep Completed response.json | wc -l
                     """
-                    def status = sh "cat response.json"
-                    def status_fail = response =~ /Failed/
-                    def status_success = response =~ /Completed/
-                    def status_inprogress = response =~ /InProgress/
-                    assert status_fail instanceof Matcher
-                    assert status_success instanceof Matcher
-                    assert status_inprogress instanceof Matcher
-                    !status_inprogress || !status_fail
+                    response == 0
                   }
               }
         }
