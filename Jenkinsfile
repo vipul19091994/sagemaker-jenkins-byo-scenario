@@ -45,7 +45,7 @@ pipeline {
                     """
                     def status = sh "cat response.json"
 
-                    status == ""Completed"" || status == ""Failed""
+                    status == '"Completed"' || status == '"Failed"''
                   }
               }
         }
