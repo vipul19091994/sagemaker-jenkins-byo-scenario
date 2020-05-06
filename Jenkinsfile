@@ -18,7 +18,11 @@ pipeline {
             steps {
               sh """
                 echo "${params.ECRURI}"
-                aws ecr get-login-password --region us-east-1 | docker login --username AWS   --password-stdin ${params.ECRURI}
+                aws ecr get-login-password --region us-east-1 | docker login --username 
+                echo "Prep for Image Build"
+                chmod -R 775 decision_trees 
+                echo "Build Container Image"
+                AWS   --password-stdin ${params.ECRURI}
  	              docker build -t scikit-byo:${env.BUILD_ID} .
                 docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:${env.BUILD_ID} 
                 docker push ${params.ECRURI}:${env.BUILD_ID}
@@ -30,12 +34,12 @@ pipeline {
         stage("TrainModel") {
             steps { 
               sh """
-               aws sagemaker create-training-job --training-job-name ${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID} --algorithm-specification TrainingImage="${params.ECRURI}:${env.BUILD_ID}",TrainingInputMode="File" --role-arn ${params.SAGEMAKER_EXECUTION_ROLE_TEST} --input-data-config '{"ChannelName": "Train", "DataSource": { "S3DataSource": { "S3DataType": "S3Prefix", "S3Uri": "${params.S3_TRAIN_DATA}"}}}' --resource-config InstanceType='ml.c4.2xlarge',InstanceCount=1,VolumeSizeInGB=5 --output-data-config S3OutputPath='${S3_MODEL_ARTIFACTS}' --stopping-condition MaxRuntimeInSeconds=3600
+               aws sagemaker create-training-job --training-job-name ${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID} --algorithm-specification TrainingImage="${params.ECRURI}:${env.BUILD_ID}",TrainingInputMode="File" --role-arn ${params.SAGEMAKER_EXECUTION_ROLE_TEST} --input-data-config '{"ChannelName": "training", "DataSource": { "S3DataSource": { "S3DataType": "S3Prefix", "S3Uri": "${params.S3_TRAIN_DATA}"}}}' --resource-config InstanceType='ml.c4.2xlarge',InstanceCount=1,VolumeSizeInGB=5 --output-data-config S3OutputPath='${S3_MODEL_ARTIFACTS}' --stopping-condition MaxRuntimeInSeconds=3600
               """
              }
         }
 
-      stage("TrainMonitor") {
+      stage("TrainStatus") {
           steps {
               script {
                   waitUntil {
@@ -49,6 +53,14 @@ pipeline {
                   }
               }
         }
-    }
+      }
+
+      stage("DeployToTest") {
+            steps { 
+              sh """
+               echo "Deploy to Test"
+              """
+             }
+        }
   }
 }   
