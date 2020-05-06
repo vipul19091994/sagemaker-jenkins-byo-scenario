@@ -58,7 +58,7 @@ pipeline {
              }
         }
 
-      stage("EvalTest") {
+      stage("SmokeTest") {
             steps { 
               script {
                  def response = sh """ 
