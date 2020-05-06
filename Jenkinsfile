@@ -27,18 +27,17 @@ pipeline {
             }
         }
         
-        stage("PackageLambdas") {
+        stage("DeployTrainingLambda") {
             steps {
               sh """ 
-              
+              aws lambda create-function --function-name MLOps-Jenkins-TrainModel-ScikitBYO --runtime python3.6 --role arn:aws:iam::976980689265:role/MLOps-Jenkins-LambdaExecution --handler MLOps-TrainModel.lambda_handler --code S3Bucket='0.lambda-artifacts-scikit-byo',S3Key='MLOps-Jenkins-TrainModel-ScikitBYO.zip'             
               """
           }
         }
 
         stage("TrainModel") {
             steps { 
-              samDeploy([credentialsId: '${params.AWS_DEPLOYUSER}', kmsKeyId: '${params.KMSKEYID}', parameters: [[key: 'S3PackagedLambdaCode', value: '${params.S3_PACKAGED_LAMBDA}'],[key: 'SageMakerExecutionRole', value: '${params.SAGEMAKER_EXECUTION_ROLE_TEST}']], region: 'us-east-1', roleArn: '${params.LAMBDA_EXECUTION_ROLE_TEST}', s3Bucket: '${params.S3_PACKAGED_LAMBDA}', s3Prefix: '${env.BUILD_ID}', stackName: 'cfn-deploy-trainmodel-lambda', templateFile: './train_cfg/sam-template-trainmodel.yml'])
-          }
+             }
         }
     }
 }   
