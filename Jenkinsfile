@@ -28,9 +28,23 @@ pipeline {
         }
         
         stage("DeployTrainingLambda") {
+            when { 
+               ${env.BUILD_ID} == 1
+            }
             steps {
               sh """ 
               aws lambda create-function --function-name MLOps-Jenkins-TrainModel-ScikitBYO --runtime python3.6 --role ${params.LAMBDA_EXECUTION_ROLE_TEST} --handler MLOps-TrainModel.lambda_handler --code S3Bucket=${params.S3_PACKAGED_LAMBDA},S3Key='MLOps-Jenkins-TrainModel-ScikitBYO.zip'             
+              """
+          }
+        }
+
+        stage("UpdateTrainingLambda") {
+            when { 
+               ${env.BUILD_ID} != 1
+            }
+            steps {
+              sh """ 
+              aws lambda update-function-code --function-name MLOps-Jenkins-TrainModel-ScikitBYO --revision-id ${env.BUILD_ID} --s3-bucket=${params.S3_PACKAGED_LAMBDA},--s3-key='MLOps-Jenkins-TrainModel-ScikitBYO.zip'
               """
           }
         }
