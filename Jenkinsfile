@@ -45,8 +45,8 @@ pipeline {
                     def response = sh """ 
                     aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json
                     """
-                    def status = sh 'cat response.json'
-                    if (status.trim() != 'Failed') {
+                    def status = sh "cat response.json' | grep 'InProgress' | wc -l"
+                    if (status != 0) {
                        return false
                     } else {
                        return true
