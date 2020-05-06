@@ -19,7 +19,7 @@ pipeline {
               sh """
                 echo "${params.ECRURI}"
                 aws ecr get-login-password --region us-east-1 | docker login --username AWS   --password-stdin ${params.ECRURI}
- 	              docker build -t scikit-byo:${env.BUILD_ID} .
+ 	              docker build -t stopping-conditionikit-byo:${env.BUILD_ID} .
                 docker tag scikit-byo:${env.BUILD_ID} ${params.ECRURI}:${env.BUILD_ID} 
                 docker push ${params.ECRURI}:${env.BUILD_ID}
                 echo ${params.S3_PACKAGED_LAMBDA}
@@ -36,12 +36,14 @@ pipeline {
         }
 
       stage("TrainMonitor") {
-        waitUntil {
-            def status = sh """ 
-              aws invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --payload "{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}"
-              echo status
-              """
-            status == "Completed" || status == "Failed"
+          steps {
+              waitUntil {
+                 def status = sh """ 
+                 aws invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --payload "{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}"
+                 echo status
+                 """
+                 status == "Completed" || status == "Failed"
+              }
         }
     }
   }
