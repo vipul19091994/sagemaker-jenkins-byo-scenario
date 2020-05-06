@@ -25,5 +25,5 @@ Resources:
       FunctionName: "MLOps-Jenkins-TrainModel-ScikitBYO"
       Code:
         S3Bucket: !Ref S3PackagedLambdaCode
-        S3Key: "MLOps-Jenkins-TrainModel.py.zip"
+        S3Key: "MLOps-Jenkins-TrainModel.zip"
       Runtime: "python3.6"
