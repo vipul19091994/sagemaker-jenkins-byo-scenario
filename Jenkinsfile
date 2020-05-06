@@ -36,24 +36,15 @@ pipeline {
         }
 
       stage("TrainStatus") {
-          options {
-                timeout(time: 20, unit: 'MINUTES') 
-          }
-          steps {
+            steps {
               script {
-                  waitUntil {
                     def response = sh """ 
                     aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json
+                    sleep 240
                     """
-                    def status = sh "cat response.json | grep InProgress | wc -l"
-                    if (status != 0) {
-                       return false
-                    } else {
-                       return true
-                    }
+                    
                   }
               }
-        }
       }
 
       stage("DeployToTest") {
@@ -64,5 +55,23 @@ pipeline {
               """
              }
         }
+
+      stage("EvalTest") {
+            steps { 
+              sh """
+               echo 'Enter Test Scripts'
+              """
+             }
+        }
+
+      stage("DeployToProd") {
+            steps { 
+              sh """
+               aws sagemaker create-endpoint-config --endpoint-config-name ${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID} --production-variants InstanceType='ml.m4.xlarge',InitialVariantWeight=1,InitialInstanceCount=1
+               aws sagemaker create-endpoint --endpoint-name ${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID} --endpoint-config-name ${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}
+              """
+             }
+        }
+
   }
 }   
