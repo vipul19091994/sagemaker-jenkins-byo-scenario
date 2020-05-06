@@ -36,13 +36,21 @@ pipeline {
         }
 
       stage("TrainStatus") {
+          options {
+                timeout(time: 20, unit: 'MINUTES') 
+          }
           steps {
               script {
                   waitUntil {
                     def response = sh """ 
-                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json | grep Completed response.json | wc -l
+                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --cli-binary-format raw-in-base64-out --region us-east-1 --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json
                     """
-                    response == 0
+                    def status = sh "cat response.json"
+                    if (status.trim() != 'Failed') {
+                       return false
+                    } else {
+                       return true
+                    }
                   }
               }
         }
