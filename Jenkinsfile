@@ -27,32 +27,10 @@ pipeline {
             }
         }
         
-        stage("DeployTrainingLambda") {
-            when { 
-               ${env.BUILD_ID} == 1
-            }
-            steps {
-              sh """ 
-              aws lambda create-function --function-name MLOps-Jenkins-TrainModel-ScikitBYO --runtime python3.6 --role ${params.LAMBDA_EXECUTION_ROLE_TEST} --handler MLOps-TrainModel.lambda_handler --code S3Bucket=${params.S3_PACKAGED_LAMBDA},S3Key='MLOps-Jenkins-TrainModel-ScikitBYO.zip'             
-              """
-          }
-        }
-
-        stage("UpdateTrainingLambda") {
-            when { 
-               ${env.BUILD_ID} != 1
-            }
-            steps {
-              sh """ 
-              aws lambda update-function-code --function-name MLOps-Jenkins-TrainModel-ScikitBYO --revision-id ${env.BUILD_ID} --s3-bucket=${params.S3_PACKAGED_LAMBDA},--s3-key='MLOps-Jenkins-TrainModel-ScikitBYO.zip'
-              """
-          }
-        }
-
         stage("TrainModel") {
             steps { 
               sh """
-               echo "Start Training"
+               aws sagemaker create-training-job --training-job-name ${env.BUILD_ID} --algorithm-specification TrainingImage="${params.ECRURI}:${env.BUILD_ID}",TrainingInputMode="File" --role-arn ${SAGEMAKER_EXECUTION_ROLE_TEST} --resource-config InstanceType='ml.c4.2xlarge',InstanceCount=1,VolumeSizeInGB=5 --output-data-config S3OutputPath='${S3_MODEL_ARTIFACTS}' --stopping-condition MaxRuntimeInSeconds=3600
               """
              }
         }
