@@ -39,8 +39,8 @@ pipeline {
         waitUntil {
             def status = sh """ 
               aws invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --payload '{ "TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"
+              echo status
               """
-            echo status
             status == "Completed" or status == "Failed"
         }
     }
