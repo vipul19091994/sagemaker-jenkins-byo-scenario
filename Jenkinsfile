@@ -44,8 +44,13 @@ pipeline {
                     cat response.json
                     """
                     def status = sh "cat response.json"
-
-                    status == '"Completed"' || status == '"Failed"''
+                    def status_fail = response =~ /Failed/
+                    def status_success = response =~ /Completed/
+                    def status_inprogress = response =~ /InProgress/
+                    assert status_fail instanceof Matcher
+                    assert status_success instanceof Matcher
+                    assert status_inprogress instanceof Matcher
+                    !status_inprogress || !status_fail
                   }
               }
         }
