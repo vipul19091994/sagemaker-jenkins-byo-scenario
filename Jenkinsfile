@@ -40,7 +40,7 @@ pipeline {
               script {
                   waitUntil {
                     def status = sh """ 
-                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --payload "{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"} response.json"
+                    aws lambda invoke --function-name ${params.LAMBDA_CHECK_STATUS_TRAINING} --payload '{"TrainingJobName": "${params.SAGEMAKER_TRAINING_JOB}-${env.BUILD_ID}"}' response.json"
                     echo status
                     """
                     status == "Completed" || status == "Failed"
