@@ -37,6 +37,9 @@ pipeline {
 
         stage("TrainModel") {
             steps { 
+              sh """
+               echo "Start Training"
+              """
              }
         }
     }
