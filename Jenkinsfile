@@ -26,6 +26,14 @@ pipeline {
               """
             }
         }
+        
+        stage("PackageLambdas") {
+            steps {
+              sh """ 
+              
+              """
+          }
+        }
 
         stage("TrainModel") {
             steps { 
