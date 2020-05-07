@@ -15,7 +15,25 @@ Applying DevOps practices to Machine Learning (ML) workloads is a fundamental pr
 
 For this portion of the workshop, we will be building the following pipeline:  
 
+![BYO Workshop Setup](images/Jenkins-Pipeline.png)
 
+The stages above are broken out into:
+
+**Checkout:** Code is checked out from this repository 
+
+**BuildPushContainer:** Container image is built using code pulled from Git and pushed to ECR
+
+**TrainModel:** Using the built container image in ECR, training data, and configuration code this step starts the training job using Amazon SageMaker Training Instances
+
+**TrainStatus:** Check if training was successful. Upon completion, packaged model artifact (model.tar.gz) will be PUT to S3 model artifact bucket.
+
+**DeployToTest:** Package model, configure model test endpoint, and deploy test endpoint using Amazon SageMaker Hosting Instances
+
+**SmokeTest:** Ensure we are able run prediction requests against deployed endpoint
+
+**DeployToProd:** Package model, configure model production endpoint, and deploy production endpoint using Amazon SageMaker Hosting Instances 
+
+*Note: For this workshop, we are deploying to 2 environments (Test/Production). In reality, this number will vary depending on your environment and the workload.*
 
 -------
 ## Prerequisite
