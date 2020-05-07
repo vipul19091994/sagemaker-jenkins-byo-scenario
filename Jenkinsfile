@@ -2,6 +2,11 @@ pipeline {
 
     agent any
 
+    environment {
+        AWS_ECR_LOGIN = 'true'
+        DOCKER_CONFIG= "${params.JENKINSHOME}"
+    }
+
     stages {
         stage("Checkout") {
             steps {
