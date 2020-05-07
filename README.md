@@ -242,12 +242,7 @@ In this step, we will create a new pipeline that we'll use to:
        - **Name:** LAMBDA_EVALUATE_MODEL
        - **Default Value:** MLOps-InvokeEndpoint-scikitbyo
 
-   * Parameter #10: Lambda Function - Smoke Test
-       - **Type:** String
-       - **Name:** LAMBDA_EVALUATE_MODEL
-       - **Default Value:** MLOps-InvokeEndpoint-scikitbyo
-
-   * Parameter #11: Default Docker Environment
+   * Parameter #10: Default Docker Environment
        - **Type:** String
        - **Name:** JENKINSHOME
        - **Default Value:** /bitnami/jenkins/jenkins_home/.docker
@@ -309,6 +304,7 @@ Jenkins allows for the abiliity to create additional pipeline triggers and embed
 
 8. When the pipeline has completed, the model that was trained once is deployed to test, run through a smoke test, and deploy to production.  Go to [Amazon SageMaker Endpoints](https://console.aws.amazon.com/sagemaker/home?region=us-east-1#/endpoints) to check out your endpoints.  
 
+![BYO Workshop Setup](images/SageMaker-Endpoints.png)
 
 **CONGRATULATIONS!** 
 
