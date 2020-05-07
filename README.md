@@ -1,12 +1,13 @@
 # MLOps: Jenkins & Bring-Your-Own-Algorithm
 
-In this section of the workshop, we will focus on building a pipeline to train and deploy a model using SageMaker training instances and hosting on a persistent Sagemaker endpoint instance.  The orhestration of the training and deployment will be done through Jenkins.  
+In this workshop, we will focus on building a pipeline to train and deploy a model using Amazon SageMaker training instances and hosting on persistent Sagemaker endpoint instance(s).  The orhestration of the training and deployment will be done through [Jenkins](https://www.jenkins.io/).  
 
-Applying DevOps practices to Machine Learning (ML) workloads is a fundamental practice to ensure models are deployed using a reliable and consistent process as well as to increase overall quality.   DevOps is not about automating the deployment of a model.  DevOps is about applying practices such as Continuous Integration(CI) and Continuous Delivery(CD) to the model development lifecycle.  CI/CD relies on automation; however, automation alone is not synonymous with DevOps or CI/CD.  
 
-In this lab, you will create a deployment pipeline utilizing AWS Development Services and SageMaker to demonstrate how CI/CD practices can be applied to machine learning workloads.  There is no one-size-fits-all model for creating a pipeline; however, the same general concepts explored in this lab can be applied and extended across various services or tooling to meet the same end result.  
+Applying DevOps practices to Machine Learning (ML) workloads is a fundamental practice to ensure machine learning workloads are deployed using a consistent methodology with traceability, consistenc, governance and quality gates. MLOps involves applying practices such as CI/CD,Continuous Monitoring, and Feedback Loops to the Machine Learning Development Lifecycle. This workshop will focus primarily on setting up a base deployment pipeline in Jenkins.  The expectation would be to continue to iterate on a base pipeline incorporating more quality checks and and pipeline features including the consideration for an data worflow pipeline.  
 
-In this lab, the use case we will focus on will be bring-your-own-algorithm for training and deploying on SageMaker.  We will combine this use case with implementing a base reference MLOps pipeline.
+ There is no one-size-fits-all model for creating a pipeline; however, the same general concepts explored in this lab can be applied and extended across various services or tooling to meet the same end result.  
+
+
 
 -----
 
@@ -36,243 +37,270 @@ This lab will walk you through the steps required to:
 
 • Setup a base pipeline responsible for orchestration of workflow to build and deploy custom ML models to target environments
 
-•	Create logic, in this case Lambda functions, to execute the necessary steps within the orchestrated pipeline required to build, train, and host ML models in an end-to-end pipeline
-
-For this lab, we will use the steps outlined in this document combined with two [CloudFormation](https://aws.amazon.com/cloudformation/) templates to create your pipeline.   CloudFormation is an AWS service that allows you to model your entire infrastructure using YAML/JSON templates.   The use of CloudFormation is included not only for  simplicity in lab setup but also to demonstrate the capabilities and benefits of Infrastructure-as-Code(IAC) and Configuration-as-Code(CAC).  We will also utilize SageMaker Notebook Instances as our lab environment to ensure a consistent experience.
+For this lab, we will perform a lot of steps manually in AWS that would typically be performed through Infrastructure-as-Code using a service like [CloudFormation](https://aws.amazon.com/cloudformation/). For the purposes of the lab, we will go step-by-step on the console so attendees become more familiar with expected inputs and artifacts part of a ML deployment pipeline.  
 
 ## **IMPORTANT:  There are steps in the lab that assume you are using N.Virginia (us-east-1).  Please use us-east-1 for this workshop** 
 
 ---
 
-## Step 1: Workshop Preparation 
+# Workshop Setup & Preparation
+
+The steps below are included for the setup of AWS resources we will be using in the lab environment.
+
+## Step 1: Create Elastic Container Registry (ECR)
+
+In this workshop, we are using Jenkins as the Docker build server; however, you can also choose to use a secondary build environment such as [AWS Code Build](https://aws.amazon.com/codebuild) as a managed build environment that also integrates with other orchestration tools such as Jenkins. Below we are creating an Elastic Container Registry (ECR) where we will push our built docker images.   
+
+1) Login to the AWS Account provided: https://console.aws.amazon.com
+ 
+2) Verify you are in **us-east-1/N.Virginia**
+
+3) Go to **Services** -> Select **Elastic Container Registry**
+
+4) Select **Create repository**
+
+   * For **Repository name**: Enter a name (ex. jenkins-byo-scikit-janedoe)
+   * Toggle the **Image scan settings** to **Enabled**  (*This will allow for automatic vulnerability scans against images we push to this repository*)
 
 
+![BYO Workshop Setup](images/ECR-Repo.png)
 
-### Steps:
+5) Click **Create repository**
+6) Confirm your repository is in the list of repositories
 
-To launch the setup of the resources above using CloudFormation:
+## Step 2: Create Model Artifact Repository
 
-1) Download this git repository by either cloning the repository or downloading the *zip
+Create the S3 bucket that we will use as our packaged model artifact repository.  Once our SageMaker training job completes successfully, a new deployable model artifact will be PUT to this bucket. In this lab, we version our artifacts using the consistent naming of the build pipeline ID.  However, you can optionally enable versioning on the S3 bucket as well.  
 
-2) Login to the [AWS Console](https://https://console.aws.amazon.com/) and enter your credentials
+1) From your AWS Account, go to **Services**-->**S3**
 
-3) Under **Services**, select [CloudFormation](https://console.aws.amazon.com/cloudformation)
+2) Click  **Create bucket**
 
-4) Click **Create Stack** buttton
+3) Under **Create Bucket / General Configuration**:
+ 
+   * **Bucket name:** *yourinitials*-jenkins-scikitbyo-modelartifact
+     
+      *Example: jd-jenkins-scikitbyo-modelartifact*
 
-5) Under **Select Template**:
-    * Click radio button next to 'Upload a template to Amazon S3', then click **Browse...**
+   * Leave all other settings as default, click **Create bucket**
 
-    * From the local repository cloned to your machine in step 1, select the file called ./2-Bring-Your-Own/01.CF-MLOps-BYO-Lab-Prep.yml
+## Step 3: Create SageMaker Execution Role
 
-    * Click **Open**
+Create the IAM Role we will use for executing SageMaker calls from our Jenkins pipeline  
 
-6) Under **Specify Stack Details**, enter: 
+1) From your AWS Account, go to **Services**-->**IAM**
 
-   * **Stack Name**: MLOps-BYO-WorkshopSetup 
+2) Select **Roles** from the menu on the left, then click **Create role**
+3) Select **AWS service**, then **SageMaker**
 
-   *  **UniqueID**: Enter *yourinitials* in lower case (Example: jdd)
-   
-      **IMPORTANT: Use a 3-character initial as shown above**
+4) Click **Next: Permissions**
 
-   ![BYO Workshop Setup](images/CF-LabSetup-1-BYO.png)
+5) Click **Next: Tags**
 
-7) Click **Next**
+6) Click **Next: Review**
 
-8) Under **Options**, leave all defaults and click '**Next**'
+7) Under **Review**:
 
-9) Under **Review**, scroll to the bottom and check the checkbox acknowledging that CloudFormation might create IAM resources and custom names, then click **Create**
+ * **Role name:** MLOps-Jenkins-SageMaker-ExecutionRole-*YourInitials*
 
-![BYO Workshop Setup](images/CF-LabSetup-2-BYO.png)
+8) Click **Create role**
 
-10) You will be returned to the CloudFormation console and will see your stack status '**CREATE_IN_PROGRESS**'
+9) You will receive a notice the role has been created, click on the link and make sure grab the arn for the role we just created as we will use it later. 
 
-11) After a few minutes, you will see your stack Status change to '**CREATE_COMPLETE**'.  You're encouraged to go explore the resources created as part of this initial setup. 
+![BYO Workshop Setup](images/SageMaker-IAM.png)
 
+10) We want to ensure we have access to S3 as well, so under the **Permissions** tab, click **Attach policies**
+
+11) Type **S3** in the search bar and click the box next to 'AmazonS3FullAccess', click **Attach policy**
+
+*Note: In a real world scenario, we would want to limit these privileges significantly to only the privileges needed.  This is only done for simplicity in the workshop.*
+
+## Step 4: Explore Lambda Helper Functions
+
+In this step, we'll explore the Lambda Helper Functions that were created to facilitate the integration of SageMaker training and deployment into a Jenkins pipeline:
+
+1. Go to **Services** -> Select **Lambda**
+2. You'll see Lambda Functions that will be used by our pipeline.  Each is described below but you can also select the function and check out the code directly. 
+
+The description of each Lambda function is included below:
+
+-	**MLOps-CheckTrainingStatus:**  This Lambda function is called from the pipeline and responsible for checking back in on the status of the previous call to create and execute a training job.  This is in place because while we may get a successful reesponse back immediately on our Create Training Job request, that response indicates the request for training was successfully submitted.  It does not mean training executed successfully so we need to include additional logic to check back in on the status of the training job until the job fails ('Failed') or succeeds ('Completed').  We only want out pipeline to proceed when the training step completes successfully. 
+-	**MLOps-InvokeEndpoint-scikitbyo:** This Lambda function is triggered during our "Smoke Test" stage in the pipeline where we are checking to ensure that our inference code is in sync with our training code by running a few sample requests for prediction to the deployed test endpoint.  We are running this step before committing our newly trained model to a higher level environment.  
+
+
+*Note: While the Lambda functions above have been predeployed in our AWS Account, they are also included in the /lambdas folder of this repo if you want to deploy them following this workshop into your own AWS Accounts.  A  [CloudFormation](https://aws.amazon.com/cloudformation/) template is also included as well to depoy using the [AWS Serverless Application Model](https://aws.amazon.com/serverless/sam/)
 
 ---
 
-## Step 2: Upload Lambda Functions to S3
+#  Build the Jenkins Pipeline
 
-In this step, you will need to upload pre-packaged Lambda functions to S3.  These Lambda functions will be used at various stages in our MLOps pipeline.  Because we will be using CloudFormation and the [AWS Serverless Application Model (SAM)](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) to deploy the Lambda functions into our accounts, they must be uploaded be packaged and uploaded to S3 prior to executing our next CloudFormation template.  
+In this step, we will create a new pipeline that we'll use to:
 
-The descriptions of each Lambda function are included below:
+   1) Pull updated training/inference code
 
--	**MLOps-BYO-TrainModel.py.zip:**  This Lambda function is responsible for executing a function that will accept various user parameters from code pipeline (ex. ECR Repository, ECR Image Version, S3 Cleansed Training Data Bucket) and use that information to then setup a training job and train a custom model using SageMaker
--	**MLOps-BYO-GetStatus.py.zip:** This Lambda function is responsible for checking back in on the status of the previous Lambda function.  Because Lambda has an execution time limit, this function ensures that the status of the previous function is accurately capture before moving on to the next stage in the pipeline
--	**MLOps-BYO-DeployModel.py.zip:** This Lambda function is responsible for executing a function that will accept various user parameters from code pipeline (ex. target deployment environment) and use that information to then setup a Configuration Endpoint and Endpoint for hosting the trained model using SageMaker
--	**MLOps-BYO-EvaluateModel.py.zip:** This Lambda function is responsible for running predictions against the trained model by accepting an environment identifier as well as an S3 bucket with sample payload as input from code pipeline.  
+   2) Create a docker image
 
-### Steps:
+   3) Push docker image to our ECR
 
-1. Download the contents of this git repository to your local machine by either cloning the repository or downloading the zip file.
+   4) Train our model using Amazon SageMaker Training Instances
+    
+   5) Deploy our model to a Test endpoint using Amazon SageMaker Hosting Instances 
 
-2. From the AWS console, go to **Services** and select **S3**
+   6) Execute a smoke test to ensure our training and inference code are in sync
 
-3. Find and click on your bucket created in the previous step (mlops-lambda-code-*yourinitials-randomgeneratedID*)
+   7) Deploy our model to a Production endpoint using Amazon SageMaker Hosting Instances
 
-     Example: mlops-lambda-code-jdd-9d055090
+## Step 5: Configure the Jenkins Pipeline
 
-     **WARNING:** Make sure you are using the correct bucket that was created by the CloudFormation template with the naming standard above.
+1) Login Jenkins portal using the information provided by your instructors
 
-4. Click **Upload** in the upper left corner to uploaded pre-packaged lambda functions to your bucket
+2) From the left menu, choose **New Item** 
 
-    * Click **Add files** and select all 4 lambda functions from the 2-Bring-Your-Own/lambda-code/MLOps-BYO*.zip directory in this repository that were download/cloned to your local laptop in step #1
+3) **Enter Item Name:** sagemaker-byo-pipeline-*yourinitials* 
 
-    * Click **Next**
+    *Example: sagemaker-byo-pipeline-jd
 
-    * Accept defaults on remaining prompts selecting **Next** each time until hitting **Upload** on the final screen
+4) Choose **Pipeline**, click **OK**
 
-You should now see all of your packaged lambda functions stored as object inside your S3 buckets. The CloudFormation template we launch next will pull the objects from this bucket, using SAM, and deploy them to as functions in the [AWS Lambda Service](https://aws.amazon.com/lambda/).   
+![BYO Workshop Setup](images/Jenkins-NewItem.png)
 
-![Lambda Functions](images/S3-Lambda-Upload-BYO.png)
+5) Under **General** tab, complete the following: 
+
+* **Description:** Enter a description for the pipeline
+
+* Select **GitHub project** & Enter the following project url: https://github.com/seigenbrode/byo-scenario
+
+
+![BYO Workshop Setup](images/Jenkins-NewItem-1.png)
+
+
+   * Scroll Down & Select **This project is parameterized**:
+      -  select **Add Parameter** --> **String Parameter**
+      -  **Name**: ECRURI
+      -  **Default Value**: *Enter the ECR repository created above*
+
+![BYO Workshop Setup](images/Jenkins-NewItem-2.png)
+
+
+ * We're going to use the same process above to create the other configurable parameters we will use as input into our pipeline. Select **Add Parameter** each time to continue to add the additional parameters below: 
+
+   *  Parameter #2: Lambda Execution Role
+       - **Type:** String
+       - **Name:** LAMBDA_EXECUTION_ROLE_TEST
+       - **Default Value:** arn:aws:iam::*<InsertAccount#>*:role/MLOps-Jenkins-LambdaExecution
+
+   * Parameter #3: SageMaker Execution Role 
+       - **Type:** String
+       - **Name:** SAGEMAKER_EXECUTION_ROLE_TEST
+       - **Default Value:** *Enter the ARN of the role we created above*
+
+   * Parameter #4: Model Artifact Bucket 
+       - **Type:** String
+       - **Name:** S3_MODEL_ARTIFACTS
+       - **Default Value:** *Enter the bucket we created above in the format: s3://*initials*-jenkins-scikitbyo-modelartifact
+
+  * Parameter #5: Training Job Name 
+       - **Type:** String
+       - **Name:** SAGEMAKER_TRAINING_JOB
+       - **Default Value:** scikit-byo
+
+  * Parameter #6: Lambda Function - Training Status 
+       - **Type:** String
+       - **Name:** LAMBDA_CHECK_STATUS_TRAINING
+       - **Default Value:** MLOps-CheckTrainingStatus
+
+  * Parameter #7: S3 Bucket w/ Training Data
+       - **Type:** String
+       - **Name:** S3_TRAIN_DATA
+       - **Default Value:** s3://0.model-training-data/train/train.csv     
+
+   * Parameter #8: S3 Bucket w/ Training Data
+       - **Type:** String
+       - **Name:** S3_TEST_DATA
+       - **Default Value:** 0.model-training-data    
+
+   * Parameter #9: Lambda Function - Smoke Test
+       - **Type:** String
+       - **Name:** LAMBDA_EVALUATE_MODEL
+       - **Default Value:** MLOps-InvokeEndpoint-scikitbyo
+
+   * Parameter #10: Lambda Function - Smoke Test
+       - **Type:** String
+       - **Name:** LAMBDA_EVALUATE_MODEL
+       - **Default Value:** MLOps-InvokeEndpoint-scikitbyo
+
+5) Scroll down --> Under **Build Triggers** tab: 
+
+  * Select **GitHub hook trigger for GITScm polling**
+
+6) Scroll down --> Under **Pipeline** tab: 
+
+   * Select **Pipeline script from SCM**
+
+   * **SCM:** Select **Git** from dropdown
+
+   * **Repository URL:** https://github.com/seigenbrode/byo-scenario
+
+   * **Credentials:** -none- *We are pulling from a public repo* 
+
+   * **Script Path:** *Ensure 'Jenkinsfile' is populated*
+
+7) Leave all other values default and click **Save**
+
+We are now ready to trigger our pipeline.  But first, we need to explore the purpose of Jenkinsfile.  Jenkins allows for many types of pipelines such as free style projects, pipelines (declarative / scripted), and external jobs.  In our original setup we selected [Pipeline](https://www.jenkins.io/doc/book/pipeline/getting-started/).  Our Git Repository also has a file named *Jenksfile* which contains the scripted flow of stages and steps for our pipeline in Jenkin's declarative pipeline language.  
 
 ---
 
-## Step 3: Build the Base MLOps Pipeline
+## Step 6: Trigger Pipeline Executions
 
-In this step, you will launch a CloudFormation template using the file 02.CF-MLOps-BYO-BuildPipeline.yml provided as part of workshop materials to build out the pipeline we will be using to train and deploy our models.  This CloudFormation template accepts 4 input parameters that will be used to setup base components including:
+In this step, we will execute the pipeline manually and then we will later demonstrate executing the pipeline automatically via a push to our connected Git Repository.  
 
-**IAM Roles:**
+Jenkins allows for the abiliity to create additional pipeline triggers and embed step logic for more sophisticated pipelines.Another common trigger would be for retraining based on a schedule, data drift, or a PUT of new training data to S3. 
 
--	**SageMaker Execution Role:**  This role will be utilized with our Lambda function code to establish a trusted relationship between a Lambda function and SageMaker.  The role gets created in the CloudFormation template as well as passed as a Environment Variable to the Lambda Function
--	**Lambda Execution Role:** This role will be utilized by all of the Lambda functions created in this lab.  The role provides access to AWS services access by the Lambda functions including S3, SageMaker, CloudWatch, CodePipeline, ECR
--	**CodeBuildRole:** This role will be utilized by CodeBuild to setup a trusted relationship for AWS services include CodeCommit and ECR.
+1. Let's trigger the first execution of our pipeline. While you're in the Jenkins Portal, select the pipeline you created above:  
 
-**Pipeline Resources:** 
-- **Lambda Functions:**  Lambda functions utilizing the packaged code uploaded to S3 in the above step.  The Lambda function definitions include the code packaged above as well as specifications related to the Lambda function runtime and configuration. 
+![BYO Workshop Setup](images/Jenkins-Pipeline-Trigger.png)
 
-- **CodeBuild Job:** CodeBuild job that we will utilize to pull code from CodeCommit and build a Docker image that will be stored in ECR
+2. Select **Build with Parameters** from the left menu:
 
-- **Elastic Container Registry (ECR):** Setup a new Elastic Container Registry that will be used source control for docker image 
-	
-- **S3 Bucket Model Artifacts:** Setup a versioned S3 bucket for model artifacts
+![BYO Workshop Setup](images/Jenkins-Pipeline-Trigger-2.png)
 
-- **CodePipeline Pipeline:**  Set up a CodePipeline that utilizes resources built in the CloudFormation template to create and end-to-end pipeline that we will use to build,train,and deploy mode to target environments
+3. You'll see all of the parameters we setup on initial configuration, you could change these values prior to a new build but we are going to leave all of our defaults, then click **Build** 
 
+4. You can monitor the progress of the build through the dashboard as well as the stages/steps being setup and executed.  An example of the initial build in progress below: 
+
+![BYO Workshop Setup](images/Jenkins-Pipeline-Trigger-3.png)
 
 
-### Steps:
+*Note: The progress bar in the lower left under Build History will turn a solid color when the build is complete. 
 
-1) Login to the [AWS Console](https://https://console.aws.amazon.com/) and enter your credentials
+5. Once your pipeline completes the **BuildPushContainer** stage, you can go view your new training/inference image in the repository we setup: Go To [ECR](https://console.aws.amazon.com/ecr/repositories). Because we turned on vulnerability scanning, you can also see if your image has any vulnerabilities.  This would be a good place to put in a quality gate, stopping the build until the vulnerabilities are addressed: 
 
-2) Under **Services**, select [CloudFormation](https://console.aws.amazon.com/cloudformation)
-
-3) Click **Create Stack** buttton
-
-4) Under **Select Template**:
-    * Click radio button next to 'Upload a template to Amazon S3', then click **Browse...**
-
-    * From the local repository cloned to your machine in step 1, select the file called ./2-Bring-Your-Own/02.CF-MLOps-BYO-BuildPipeline.yml
-
-    * Click **Open**
-
-    * Click **Next**
-
-3. Under **Specify Stack Details**, enter: 
-
-   * **Stack Name**: MLOps-BYO-BuildPipeline
-
-   * **LambdaFunctionsBucket**: Enter the name of the existing S3 bucket that contains the lambda code we uploaded in the previous step 
-
-       (i.e. mlops-lambda-code-*yourinitials-uniqueid*) 
-
-   *  **RepositoryBranch**: master
-   *  **UniqueID**: Enter *yourinitials* in lower case (Example: jdd)
-   
-      **IMPORTANT: Use a 3-character initial as shown above**
-
-   ![BYO Build Pipeline](images/CF-BuildPipeline-1-BYO.png)
-
-4. Click **Next**
-
-5. Under **Options**, leave all defaults and click **Next**
-
-6. Under **Review**, scroll to the bottom and check the checkbox acknowledging that CloudFormation might create IAM resources and custom names, then click **Create**
-
-7. You will be returned to the CloudFormation console and will see your stack status '**CREATE_IN_PROGRESS**'
-
-8. After a few minutes, you will see your stack Status change to '**CREATE_COMPLETE**'.  You're encouraged to go explore the resources created as part of this initial setup. 
+![BYO Workshop Setup](images/ECR-Repo-Push.png)
 
 
-**NOTE: CodePipeline will automatically kickoff after this step; however, since we have not yet added data to the S3 bucket - it will error on the initial kickoff which is expected. Adding data to the S3 bucket is executed in Step 4 below. **
+6. When you're pipeline reaches the **TrainModel** stage, you can checkout more details about training because we are reaching out to utilize Amazon SageMaker training instances during our training.  Go To [Amazon SageMaker Training Jobs](https://console.aws.amazon.com/sagemaker/home?region=us-east-1#/jobs).  You can click on your job and review the details of your training job, check out the monitoring metrics.  
 
----
+7. When the pipeline has completed the **TrainStatus** stage, the model has been trained and you will be able to find your deployable model artifact in the S3 bucket we created earlier.  Go To [S3](https://s3.console.aws.amazon.com/s3/home?region=us-east-1) and find your bucket to view your model artifact: *yourinitials*-jenkins-scitkitbyo-modelartifact
 
-## Step 4: Trigger Pipeline Executions
-
-In this step, you will execute several activities within a SageMaker Notebook Instance to:
-   
-   1. **Simulate Analytics Pipeline Activities**: Push S3 training and validation data to the S3 data bucket (i.e. mlops-data-*yourinitials-uniqueid*)
-
-   2. **Commit training/inference code to CodeCommit**: Using code from this public git repository (./model-code), commit code to the CodeCommit repository to trigger an execution of the CodePipeline.
-   
-### Steps:
-
-1. Login to the [AWS Console](https://https://console.aws.amazon.com/) and enter your credentials
-
-2. Select **Services** from the top menu, and choose **Amazon SageMaker** 
-
-3. Click on **Notebook Instances**
-
-4. You should see a notebook instance, created by the CloudFormation template, called **MLOps-BYO-Notebook-*yourinitials***.  Click **Open Jupyter**
-
-5. From within your Jupyter notebook, click the **New** dropdown in the top right, then select **Terminal** 
-
-![Notebook Instance Terminal](images/SM-Notebook-Instance-1.png)
+8. When the pipeline has completed, the model that was trained once is deployed to test, run through a smoke test, and deploy to production.  Go to [Amazon SageMaker Endpoints](https://console.aws.amazon.com/sagemaker/home?region=us-east-1#/endpoints) to check out your endpoints.  
 
 
-6. This will bring up terminal access to prepare files to commit to our code repository.  In the first CloudFormation template executed, 01.CF-MLOps-BYO-Lab-Prep.yml, we setup a SageMaker Notebook Instance with a [Lifecycle Configuration](https://docs.aws.amazon.com/sagemaker/latest/dg/notebook-lifecycle-config.html) to install files on the notebook instance at startup. The notebook instance was also setup with integration to a CodeCommit repository also setup in the same CloudFormation template. 
+**CONGRATULATIONS!** 
 
-    *Run the following commands in the terminal* 
+You've setup your base Jenkins pipeline for building your custom machine learning containers to train and host on Amazon SageMaker.  You can continue to iterate and add in more functionality including items such as: 
 
-         cp -R /home/ec2-user/SageMaker/byo-staging/* /home/ec2-user/SageMaker/mlops-codecommit-byo/
+ * A/B Testing 
+ * Endpoint Cleanup
+ * Additional Quality Gates
+ * Retraining strategy
+ * Include more sophisticated logic in the pipeline such as [Inference Pipeline](https://docs.aws.amazon.com/sagemaker/latest/dg/inference-pipelines.html), [Multi-Model Endpoint](https://docs.aws.amazon.com/sagemaker/latest/dg/multi-model-endpoints.html)
 
-
-7. Go back to your notebook instance, and click on the 'mlops-codecommit-byo' file under **Files**.  You should now see several files (shown below) which we will use for lab activities.  Within that same folder is a notebook we will be using for the remainder of the workshop called **03.MLOps-BYO-LabNotebook.ipynb**.  
-
-![SM Notebook](images/SM-Notebook-Instance-2.png)
-
-8. Click on that notebook, and it will bring you into your Jupyter Notebook instance environment.  
-
-![SM Notebook2](images/SM-Notebook-Instance-3.png)
-
-9. The remainder of the workshop will be conducted inside the Jupyter Notebook instance.  If you are not familiar with working inside notebook instance environments, the main items you will need to know for this workshop are below: 
-
-   * To execute the current code cell, you can click **Run** on the top menu or Shift + Enter
-
-   * **IMPORTANT: EXECUTE THE CELLS IN ORDER, WAITING FOR THE PREVIOUS TO SUCCESSFULLY COMPLETE BEFORE EXECUTING THE NEXT**.   A cell has completed execution when there is a number in the bracked next to the cell as shown below.   If the cell is still executing, you will see [*]
 
 
 ---
 
 ## Step 5: Clean-Up
 
-In addition to the steps for clean-up noted in your notebook instance, please execute the following clean-up steps.  Note: These steps can be automated and/or done programmatically but doing manual clean to enforce what was created during the workshop. 
+If you are performing work in your own AWS Account, please clean up resources you will no longer use to avoid unnecessary charges. 
 
-1. Login to the [AWS Console](https://https://console.aws.amazon.com/) and enter your credentials   
-
-2. Select **Services** from the top menu, and choose **Amazon SageMaker**
-
-   **Notebook Instance**
-   * Go to **Notebook Instances** on the left hand menu, select your notebook instance by selecting the radio button next to it.
-
-   *  Select **Actions** and then **Stop** from the dropdown list
-
-   **Endpoints**
-   * Go to **Inference / Endpoints** on the left hand menu, click the radio button next to each endpoint. 
-
-   * Select **Actions** and then **Delete**, then confirm delete hitting the **Delete** button. 
-
-3. Select **Services** from the top menu, and choose **S3**
-
-    * Delete all S3 buckets created for this workshop with the following naming convention: 
-      - mlops-*
-    
-    * Click the box next to each bucket and click **Delete** -> confirm deletion
-       
-       
-
-4. Select **Services** from the top menu, and choose **CloudFormation**
-
-   * For the two stacks that were created in this workshop (MLOps-*), click the checkbox next to the stack.  Select **Actions** , then **Delete Stack**
