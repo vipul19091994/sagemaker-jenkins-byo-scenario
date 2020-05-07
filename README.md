@@ -202,7 +202,7 @@ In this step, we will create a new pipeline that we'll use to:
   * Parameter #5: Training Job Name 
        - **Type:** String
        - **Name:** SAGEMAKER_TRAINING_JOB
-       - **Default Value:** scikit-byo
+       - **Default Value:** scikit-byo-*yourinitials*
 
   * Parameter #6: Lambda Function - Training Status 
        - **Type:** String
