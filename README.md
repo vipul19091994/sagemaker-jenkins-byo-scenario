@@ -248,9 +248,9 @@ In this step, we will create a new pipeline that we'll use to:
        - **Default Value:** MLOps-InvokeEndpoint-scikitbyo
 
    * Parameter #11: Default Docker Environment
-       -**Type:** String
-       -**Name:** JENKINSHOME
-       -**Default Value:** /bitnami/jenkins/jenkins_home/.docker
+       - **Type:** String
+       - **Name:** JENKINSHOME
+       - **Default Value:** /bitnami/jenkins/jenkins_home/.docker
    
 
 5) Scroll down --> Under **Build Triggers** tab: 
