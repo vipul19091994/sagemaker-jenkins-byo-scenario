@@ -6,6 +6,7 @@ FROM ubuntu:16.04
 
 MAINTAINER Amazon AI <sage-learner@amazon.com>
 
+
 RUN apt-get update && \
         apt-get install -y software-properties-common vim
         add-apt-repository ppa:jonathonf/python-3.6
