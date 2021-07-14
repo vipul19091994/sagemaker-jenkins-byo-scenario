@@ -7,19 +7,6 @@ FROM ubuntu:16.04
 MAINTAINER Amazon AI <sage-learner@amazon.com>
 
 
-RUN apt-get update && \
-        apt-get install -y software-properties-common vim
-        add-apt-repository ppa:jonathonf/python-3.6
-RUN apt-get update -y
-
-RUN apt-get install -y build-essential python3.6 python3.6-dev python3-pip python3.6-venv && \
-        apt-get install -y git
-
-# update pip
-RUN python3.6 -m pip install pip --upgrade && \
-        python3.6 -m pip install wheel
-
-
 RUN apt-get -y update && apt-get install -y --no-install-recommends \
          wget \
          nginx \
@@ -31,7 +18,7 @@ RUN apt-get -y update && apt-get install -y --no-install-recommends \
 # linking them together. Likewise, pip leaves the install caches populated which uses
 # a significant amount of space. These optimizations save a fair amount of space in the
 # image, which reduces start up time.
-RUN wget https://bootstrap.pypa.io/get-pip.py && python get-pip.py && \
+RUN wget https://bootstrap.pypa.io/pip/2.7/get-pip.py && python get-pip.py && \
     pip install numpy==1.16.2 scipy==1.2.1 scikit-learn==0.20.2 pandas flask gevent gunicorn && \
         (cd /usr/local/lib/python2.7/dist-packages/scipy/.libs; rm *; ln ../../numpy/.libs/* .) && \
         rm -rf /root/.cache
