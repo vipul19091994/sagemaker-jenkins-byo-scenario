@@ -3,6 +3,8 @@ pipeline {
     agent any
 
     environment {
+        AWS_REGION = 'us-east-1'
+        AWS_DEFAULT_REGION = 'us-east-1'
         AWS_ECR_LOGIN = 'true'
         DOCKER_CONFIG= "${params.JENKINSHOME}"
     }
