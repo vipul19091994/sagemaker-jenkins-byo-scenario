@@ -21,7 +21,7 @@ pipeline {
               sh """
                 echo "${params.ECRURI}"
                 aws --version
-                
+                """
             }
         }
         
