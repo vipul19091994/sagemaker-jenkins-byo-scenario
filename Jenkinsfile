@@ -20,7 +20,7 @@ pipeline {
             steps {
               sh """
                 echo "${params.ECRURI}"
-                ${params.AWSCLI}/aws --version
+                ${params.AWSCLI} --version
                 
                 """
             }
