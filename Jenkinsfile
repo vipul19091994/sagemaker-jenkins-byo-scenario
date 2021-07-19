@@ -21,6 +21,8 @@ pipeline {
               sh """
                 echo "${params.ECRURI}"
                 aws --version
+                pip3 install --upgrade awscli
+                aws --version
                 """
             }
         }
